@@ -51,6 +51,7 @@ MANIFEST
 
 env
 dev-env
+.venv
 
 .cache
 .hypothesis
