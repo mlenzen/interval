@@ -24,6 +24,40 @@ def test_interval_init_tzinfo_mismatch():
 	with pytest.raises(TypeError):
 		Interval(datetime(2017, 3, 22), datetime.now(tz=timezone.utc))
 
+
+def test_interval_init_value_mismatch():
+	with pytest.raises(ValueError):
+		Interval(datetime(2017, 3, 22), datetime(2017, 3, 24), timedelta(days=1))
+
+
+def test_interval_init_only_beg():
+	with pytest.raises(ValueError):
+		Interval(datetime(2017, 3, 22))
+
+
+def test_interval_init_only_end():
+	with pytest.raises(ValueError):
+		Interval(end=datetime(2017, 3, 22))
+
+
+def test_interval_init_only_delta():
+	with pytest.raises(ValueError):
+		Interval(delta=timedelta(days=2))
+
+
+def test_interval_init_empty():
+	with pytest.raises(ValueError):
+		Interval()
+
+
+def test_tzinfo():
+	assert Interval(datetime.now(timezone.utc), delta=timedelta(days=1)).tzinfo == timezone.utc
+
+
+def test_tzinfo_from_end():
+	assert Interval(end=datetime.now(timezone.utc), delta=timedelta(days=2)).tzinfo == timezone.utc
+
+
 def test_str():
 	i = Interval(datetime(2017, 3, 22), datetime(2017, 3, 24))
 	assert str(i) == '2017-03-22 00:00:00-2017-03-24 00:00:00'
@@ -57,9 +91,23 @@ def test_contains_end():
 	assert datetime(2017, 3, 23) not in i
 
 
-def test_pace():
+def test_pace_middle():
 	i = Interval(datetime(2017, 3, 22), datetime(2017, 3, 24))
 	assert i.pace(datetime(2017, 3, 23)) == 0.5
+
+
+def test_pace_prior():
+	i = Interval(datetime(2017, 3, 22), datetime(2017, 3, 24))
+	assert i.pace(datetime(2017, 3, 21)) == 0
+
+
+def test_pace_post():
+	i = Interval(datetime(2017, 3, 22), datetime(2017, 3, 24))
+	assert i.pace(datetime(2017, 3, 27)) == 1
+
+
+def test_pace_today():
+	assert 0 < Month.containing(datetime.now()).pace() < 1
 
 
 def test_run_rate():
@@ -71,6 +119,19 @@ def test_add():
 	i = Interval(datetime(2017, 3, 22), datetime(2017, 3, 23))
 	j = Interval(datetime(2017, 3, 23), datetime(2017, 3, 24))
 	assert i + j == Interval(datetime(2017, 3, 22), datetime(2017, 3, 24))
+
+
+def test_equal_not():
+	d1 = datetime(2017, 3, 22)
+	d2 = datetime(2017, 3, 23)
+	i = Interval(d1, d2)
+	assert i != (d1, d2)
+
+
+def test_add_reverse():
+	i = Interval(datetime(2017, 3, 22), datetime(2017, 3, 23))
+	j = Interval(datetime(2017, 3, 23), datetime(2017, 3, 24))
+	assert j + i == Interval(datetime(2017, 3, 22), datetime(2017, 3, 24))
 
 
 def test_add_nonconsecutive():

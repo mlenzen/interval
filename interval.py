@@ -53,7 +53,7 @@ class Interval():
 				# have tzinfo
 				self._delta = end - beg
 		else:
-			if not end and delta:
+			if not (end and delta):
 				raise ValueError('Must pass at least 2 of beg, end & delta')
 			self._beg = end - delta
 			self._delta = delta
