@@ -146,15 +146,6 @@ def test_containing():
 	assert Day.containing(datetime(2016, 5, 23, 12, 0, 0)) == Day(datetime(2016, 5, 23))
 
 
-def test_beginning():
-	assert Day
-	pass
-
-
-def test_divide():
-	pass
-
-
 def test_custom_proper_interval():
 	class FiscalYear(ProperInterval):
 

@@ -38,7 +38,7 @@ class Interval():
 			beg: datetime = None,
 			end: datetime = None,
 			delta: timedelta = None,
-			):
+			) -> None:
 		"""Create an Interval with arbitrary beg and end datetimes."""
 		if beg:
 			self._beg = beg
@@ -226,7 +226,7 @@ class ProperInterval(Interval, metaclass=ABCMeta):
 class Year(ProperInterval):
 	"""A ProperInterval for a Year."""
 
-	def __init__(self, year: int, tzinfo: tzinfo = None):
+	def __init__(self, year: int, tzinfo: tzinfo = None) -> None:
 		self._year = year
 		self._tzinfo = tzinfo
 
@@ -254,12 +254,8 @@ class Year(ProperInterval):
 		return self.end - self.beg
 
 	@classmethod
-	def containing(cls, d: date):
-		if isinstance(d, datetime):
-			tzinfo = d.tzinfo
-		else:
-			tzinfo = None
-		return cls(d.year, tzinfo=tzinfo)
+	def containing(cls, dt: datetime):
+		return cls(dt.year, tzinfo=dt.tzinfo)
 
 	def prev(self):
 		return type(self)(self.year - 1, self.tzinfo)
@@ -279,7 +275,7 @@ class Year(ProperInterval):
 class Quarter(ProperInterval):
 	"""ProperInterval for a quarter (of a year)."""
 
-	def __init__(self, year: int, quarter: int, tzinfo: tzinfo = None):
+	def __init__(self, year: int, quarter: int, tzinfo: tzinfo = None) -> None:
 		if not (1 <= quarter <= 4):
 			raise ValueError('quarter must be 1, 2, 3 or 4')
 		self._year = year
@@ -321,13 +317,9 @@ class Quarter(ProperInterval):
 		return self.end - self.beg
 
 	@classmethod
-	def containing(cls, d: date):
-		if isinstance(d, datetime):
-			tzinfo = d.tzinfo
-		else:
-			tzinfo = None
-		quarter = d.month // 3 + 1
-		return cls(d.year, quarter, tzinfo=tzinfo)
+	def containing(cls, dt: datetime):
+		quarter = dt.month // 3 + 1
+		return cls(dt.year, quarter, tzinfo=dt.tzinfo)
 
 	def prev(self):
 		if self.quarter == 1:
@@ -342,7 +334,7 @@ class Quarter(ProperInterval):
 class Month(ProperInterval):
 	"""ProperInterval for a month."""
 
-	def __init__(self, year: int, month: int, tzinfo: tzinfo = None):
+	def __init__(self, year: int, month: int, tzinfo: tzinfo = None) -> None:
 		if not (1 <= month <= 12):
 			raise ValueError
 		self._year = year
@@ -387,12 +379,8 @@ class Month(ProperInterval):
 		return calendar.monthrange(self.year, self.month)[1]
 
 	@classmethod
-	def containing(cls, d: date):
-		if isinstance(d, datetime):
-			tzinfo = d.tzinfo
-		else:
-			tzinfo = None
-		return cls(d.year, d.month, tzinfo=tzinfo)
+	def containing(cls, dt: datetime):
+		return cls(dt.year, dt.month, tzinfo=dt.tzinfo)
 
 	@property
 	def name(self):
@@ -438,7 +426,7 @@ class FixedIntervalType(ABCMeta):
 class FixedInterval(Interval, metaclass=FixedIntervalType):
 	"""A Interval of a fixed length."""
 
-	def __init__(self, beg: datetime):
+	def __init__(self, beg: datetime) -> None:
 		self._beg = beg
 
 	@property
@@ -465,7 +453,8 @@ class FixedInterval(Interval, metaclass=FixedIntervalType):
 	@classmethod
 	def ending(cls, d: datetime):
 		"""Return the instance of this class ending at datetime d."""
-		return cls(d - cls.delta)
+		beg = d - cls.delta
+		return cls(beg)
 
 	@classmethod
 	def create(cls, delta: timedelta, name='CustomInterval'):
@@ -478,7 +467,7 @@ class Week(FixedInterval, ProperInterval):
 	delta = timedelta(days=7)
 
 	@classmethod
-	def containing(cls, d: date, starts_on: int = None):
+	def containing(cls, dt: datetime, starts_on: int = None):
 		"""Create the week that starts on d.
 
 		Use calendar.setfirstweekday or pass starts_on to set the first
@@ -486,11 +475,10 @@ class Week(FixedInterval, ProperInterval):
 		"""
 		if not starts_on:
 			starts_on = calendar.firstweekday()
-		if isinstance(d, datetime):
-			d = d.date()
-		days = (d.weekday() + 7 - starts_on) % 7
-		d -= timedelta(days=days)
-		return cls(d)
+		days_prior = (dt.weekday() + 7 - starts_on) % 7
+		day_start = dt.replace(hour=0, minute=0, second=0, microsecond=0)
+		week_start = day_start - timedelta(days=days_prior)
+		return cls(week_start)
 
 
 class _SubDay():
@@ -525,8 +513,8 @@ class Day(FixedInterval, ProperInterval, _SubDay):
 	delta = timedelta(days=1)
 
 	@classmethod
-	def containing(cls, d: date):
-		d = datetime(d.year, d.month, d.day)
+	def containing(cls, dt: datetime):
+		d = datetime(dt.year, dt.month, dt.day)
 		return cls(d)
 
 	@property
@@ -578,7 +566,7 @@ class MilliSecond(FixedInterval, ProperInterval, _SubDay):
 
 	@classmethod
 	def containing(cls, dt: datetime):
-		microsecond = round(dt.microsecond, -3)
+		microsecond = int(round(dt.microsecond, -3))
 		dt = dt.replace(microsecond=microsecond)
 		return cls(dt)
 
