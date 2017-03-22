@@ -142,7 +142,7 @@ def test_add_nonconsecutive():
 
 
 def test_containing():
-	assert Month.containing(date(2016, 5, 23)) == Month(year=2016, month=5)
+	assert Month.containing(datetime(2016, 5, 23)) == Month(year=2016, month=5)
 	assert Day.containing(datetime(2016, 5, 23, 12, 0, 0)) == Day(datetime(2016, 5, 23))
 
 
