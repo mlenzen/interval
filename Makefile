@@ -29,7 +29,9 @@ lint:
 	flake8 --statistics --count
 
 coverage:
-	coverage run setup.py test
+	coverage run -m py.test
+
+coverage-html: coverage
 	coverage report -m
 	coverage html
 	xdg-open .coverage_html/index.html

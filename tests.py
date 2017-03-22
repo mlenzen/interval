@@ -7,6 +7,7 @@ from interval import (
 	Week,
 	Day,
 	ProperInterval,
+	FixedInterval,
 	)
 
 
@@ -49,6 +50,11 @@ def test_custom_proper_interval():
 	assert fy2016.beg == datetime(2016, 2, 1)
 	assert fy2016.end == datetime(2017, 2, 1)
 	assert fy2016.delta == timedelta(days=366)
+	assert FiscalYear.containing(datetime(2016, 3, 1)) == fy2016
+	assert FiscalYear.containing(datetime(2017, 1, 23)) == fy2016
+	assert FiscalYear.beginning(datetime(2016, 2, 1)) == fy2016
+	with pytest.raises(ValueError):
+		FiscalYear.beginning(datetime(2016, 1, 1))
 
 
 def test_day_name():
@@ -61,3 +67,28 @@ def test_month_name():
 	m = Month(2017, 3)
 	assert m.name == 'March'
 	assert m.abbr == 'Mar'
+
+
+def test_inherit_fixed_interval_bad():
+	"""Classes inheriting from FixedInterval must have a property delta."""
+	class Bad(FixedInterval):
+		pass
+
+	with pytest.raises(TypeError):
+		Bad(datetime.now())
+
+
+def test_inherit_fixed_interval_good():
+	class Good(FixedInterval):
+		delta = timedelta(days=2)
+
+	o = Good(datetime(2017, 3, 21))
+	assert o.beg == datetime(2017, 3, 21)
+	assert o.end == datetime(2017, 3, 23)
+	assert o.delta == timedelta(days=2)
+
+
+def test_fixed_interval_factory():
+	cls = FixedInterval.create(timedelta(days=3))
+	obj = cls(datetime(2017, 3, 21))
+	assert obj.end == datetime(2017, 3, 24)

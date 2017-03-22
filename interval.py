@@ -49,12 +49,26 @@ class Interval():
 			else:
 				if not end:
 					raise ValueError('Must pass at least 2 of beg, end & delta')
+				# Implicitly check that end and beg eith both have or don't
+				# have tzinfo
 				self._delta = end - beg
 		else:
 			if not end and delta:
 				raise ValueError('Must pass at least 2 of beg, end & delta')
 			self._beg = end - delta
 			self._delta = delta
+
+	def __repr__(self):
+		return '{cls}(beg={self.beg}, end={self.end})'.format(
+			cls=type(self),
+			self=self,
+			)
+
+	def __str__(self):
+		return '{self.beg}-{self.end}'.format(self=self)
+
+	def __bool__(self):
+		return self.end > self.beg
 
 	@property
 	def beg(self) -> datetime:
@@ -97,6 +111,13 @@ class Interval():
 			return 1.0
 		else:
 			return (dt - self.start) / self.delta
+
+	def run_rate(self, dt: datetime = None, value=1):
+		"""Return the run rate for value at dt.
+
+		If dt is x% through the Interval, calulate the basic run rate for value.
+		"""
+		return value * self.pace(dt)
 
 	def divide(self, interval_type, extras_action='raise'):
 		"""Divide this interval into Intervals of interval_type.
@@ -329,6 +350,9 @@ class Month(ProperInterval):
 		self._month = month
 		self._tzinfo = tzinfo
 
+	def __str__(self):
+		return '{self.name} {self.year}'.format(self=self)
+
 	@property
 	def year(self) -> int:
 		return self._year
@@ -410,7 +434,7 @@ class FixedIntervalType(ABCMeta):
 	@property
 	@abstractmethod
 	def delta(self) -> timedelta:
-		raise NotImplementedError()
+		raise NotImplementedError
 
 	def __mul__(self, value):
 		# TODO
@@ -444,8 +468,8 @@ class FixedInterval(Interval, metaclass=FixedIntervalType):
 		return cls(d - cls.delta)
 
 	@classmethod
-	def create(cls, td: timedelta):
-		return type('CustomInterval', (cls, ), {'delta': td})
+	def create(cls, delta: timedelta, name='CustomInterval'):
+		return type(name, (cls, ), {'delta': delta})
 
 
 class Week(FixedInterval, ProperInterval):
