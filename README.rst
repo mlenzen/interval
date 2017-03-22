@@ -1,6 +1,15 @@
 interval README
 ###############
 
+.. image:: https://travis-ci.org/mlenzen/interval.svg?branch=master
+	:target: https://travis-ci.org/mlenzen/interval
+	:alt: Build Status
+
+
+.. image:: https://coveralls.io/repos/mlenzen/interval/badge.svg?branch=master
+	:target: https://coveralls.io/r/mlenzen/interval?branch=master
+	:alt: Coverage
+
 Classes for dealing with date ranges
 
 Why?
