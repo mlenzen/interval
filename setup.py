@@ -12,7 +12,7 @@ setup(
 	author='Michael Lenzen',
 	author_email='m.lenzen@gmail.com',
 	license='Apache License, Version 2.0',
-	# url='',
+	url='https://github.com/mlenzen/interval/',
 	keywords=[
 		'interval',
 		'date range',
