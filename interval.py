@@ -113,8 +113,12 @@ class Interval():
 		raise NotImplementedError
 
 	def __add__(self, other):
-		# TODO
-		raise NotImplementedError
+		if other.end == self.beg:
+			return Interval(other.beg, self.end)
+		elif self.end == other.beg:
+			return Interval(self.beg, other.end)
+		else:
+			raise ValueError('Interval is not consecutive with this Interval')
 
 
 class ProperInterval(Interval, metaclass=ABCMeta):
@@ -367,13 +371,13 @@ class Month(ProperInterval):
 			tzinfo = None
 		return cls(d.year, d.month, tzinfo=tzinfo)
 
+	@property
 	def name(self):
-		# TODO
-		raise NotImplementedError
+		return calendar.month_name[self.month]
 
+	@property
 	def abbr(self):
-		# TODO
-		raise NotImplementedError
+		return calendar.month_abbr[self.month]
 
 	def prev(self):
 		if self.month == 1:
@@ -382,7 +386,15 @@ class Month(ProperInterval):
 		else:
 			year = self.year
 			month = self.month - 1
-		return type(self)(year, month, self.tzinfo)
+		return Month(year, month, self.tzinfo)
+
+	def date(self, day):
+		return date(self.year, self.month, day)
+
+	def datetime(self, *args, **kwargs):
+		if 'tzinfo' not in kwargs:
+			kwargs['tzinfo'] = self.tzinfo
+		return datetime(self.year, self.month, *args, **kwargs)
 
 
 class FixedIntervalType(ABCMeta):
@@ -452,7 +464,33 @@ class Week(FixedInterval, ProperInterval):
 		return cls(d)
 
 
-class Day(FixedInterval, ProperInterval):
+class _SubDay():
+	"""A mixin for ProperIntervals shorter than a day."""
+
+	@property
+	def year(self):
+		return self.beg.year
+
+	@property
+	def month(self):
+		return self.beg.month
+
+	@property
+	def day(self):
+		return self.beg.day
+
+	def weekday(self):
+		return self.beg.weekday()
+
+	def isoweekday(self):
+		return self.beg.isoweekday()
+
+	@property
+	def date(self):
+		return self.beg.date()
+
+
+class Day(FixedInterval, ProperInterval, _SubDay):
 	"""ProperInterval for a day."""
 
 	delta = timedelta(days=1)
@@ -462,16 +500,16 @@ class Day(FixedInterval, ProperInterval):
 		d = datetime(d.year, d.month, d.day)
 		return cls(d)
 
+	@property
 	def name(self):
-		# TODO
-		raise NotImplementedError
+		return calendar.day_name[self.weekday()]
 
+	@property
 	def abbr(self):
-		# TODO
-		raise NotImplementedError
+		return calendar.day_abbr[self.weekday()]
 
 
-class Hour(FixedInterval, ProperInterval):
+class Hour(FixedInterval, ProperInterval, _SubDay):
 	"""ProperInterval for an hour."""
 
 	delta = timedelta(hours=1)
@@ -482,7 +520,7 @@ class Hour(FixedInterval, ProperInterval):
 		return cls(dt)
 
 
-class Minute(FixedInterval, ProperInterval):
+class Minute(FixedInterval, ProperInterval, _SubDay):
 	"""ProperInterval for a minute."""
 
 	delta = timedelta(minutes=1)
@@ -493,7 +531,7 @@ class Minute(FixedInterval, ProperInterval):
 		return cls(dt)
 
 
-class Second(FixedInterval, ProperInterval):
+class Second(FixedInterval, ProperInterval, _SubDay):
 	"""ProperInterval for a second."""
 
 	delta = timedelta(seconds=1)
@@ -504,7 +542,7 @@ class Second(FixedInterval, ProperInterval):
 		return cls(dt)
 
 
-class MilliSecond(FixedInterval, ProperInterval):
+class MilliSecond(FixedInterval, ProperInterval, _SubDay):
 	"""ProperInterval for a millisecond."""
 
 	delta = timedelta(microseconds=1000)
@@ -516,7 +554,7 @@ class MilliSecond(FixedInterval, ProperInterval):
 		return cls(dt)
 
 
-class MicroSecond(FixedInterval, ProperInterval):
+class MicroSecond(FixedInterval, ProperInterval, _SubDay):
 	"""ProperInterval for a microsecond."""
 
 	delta = timedelta(microseconds=1)

@@ -49,3 +49,15 @@ def test_custom_proper_interval():
 	assert fy2016.beg == datetime(2016, 2, 1)
 	assert fy2016.end == datetime(2017, 2, 1)
 	assert fy2016.delta == timedelta(days=366)
+
+
+def test_day_name():
+	d = Day(datetime(2017, 3, 21))
+	assert d.name == 'Tuesday'
+	assert d.abbr == 'Tue'
+
+
+def test_month_name():
+	m = Month(2017, 3)
+	assert m.name == 'March'
+	assert m.abbr == 'Mar'
