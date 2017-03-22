@@ -1,4 +1,5 @@
-from datetime import date, datetime, timedelta
+"""Tests for interval."""
+from datetime import date, datetime, timedelta, timezone
 
 import pytest
 
@@ -8,7 +9,75 @@ from interval import (
 	Day,
 	ProperInterval,
 	FixedInterval,
+	Interval,
 	)
+
+
+def test_interval_init():
+	i = Interval(datetime(2017, 3, 22), datetime(2017, 3, 24))
+	assert i.delta == timedelta(days=2)
+	assert i == Interval(datetime(2017, 3, 22), delta=timedelta(days=2))
+	assert i == Interval(end=datetime(2017, 3, 24), delta=timedelta(days=2))
+
+
+def test_interval_init_tzinfo_mismatch():
+	with pytest.raises(TypeError):
+		Interval(datetime(2017, 3, 22), datetime.now(tz=timezone.utc))
+
+def test_str():
+	i = Interval(datetime(2017, 3, 22), datetime(2017, 3, 24))
+	assert str(i) == '2017-03-22 00:00:00-2017-03-24 00:00:00'
+
+
+def test_repr():
+	i = Interval(datetime(2017, 3, 22), datetime(2017, 3, 24))
+	assert repr(i) == 'Interval(beg=datetime.datetime(2017, 3, 22, 0, 0), end=datetime.datetime(2017, 3, 24, 0, 0))'
+
+
+def test_bool_true():
+	i = Interval(datetime(2017, 3, 22), datetime(2017, 3, 24))
+	assert i
+
+def test_bool_empty():
+	assert not Interval(datetime(2017, 3, 22), datetime(2017, 3, 22))
+
+
+def test_contains_middle():
+	i = Interval(datetime(2017, 3, 22), datetime(2017, 3, 23))
+	assert datetime(2017, 3, 22, 12) in i
+
+
+def test_contains_beg():
+	i = Interval(datetime(2017, 3, 22), datetime(2017, 3, 23))
+	assert datetime(2017, 3, 22) in i
+
+
+def test_contains_end():
+	i = Interval(datetime(2017, 3, 22), datetime(2017, 3, 23))
+	assert datetime(2017, 3, 23) not in i
+
+
+def test_pace():
+	i = Interval(datetime(2017, 3, 22), datetime(2017, 3, 24))
+	assert i.pace(datetime(2017, 3, 23)) == 0.5
+
+
+def test_run_rate():
+	i = Interval(datetime(2017, 3, 22), datetime(2017, 3, 24))
+	assert i.run_rate(datetime(2017, 3, 23, 12)) == 4 / 3
+
+
+def test_add():
+	i = Interval(datetime(2017, 3, 22), datetime(2017, 3, 23))
+	j = Interval(datetime(2017, 3, 23), datetime(2017, 3, 24))
+	assert i + j == Interval(datetime(2017, 3, 22), datetime(2017, 3, 24))
+
+
+def test_add_nonconsecutive():
+	i = Interval(datetime(2017, 3, 22), datetime(2017, 3, 23))
+	j = Interval(datetime(2017, 3, 23, 12), datetime(2017, 3, 24))
+	with pytest.raises(ValueError):
+		i + j
 
 
 def test_containing():

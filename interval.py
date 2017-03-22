@@ -27,6 +27,10 @@ class Interval():
 		beg: The start of the interval, inclusive.
 		end: The end of the interval, exclusive.
 		delta: The length of the interval.
+	Raises:
+		TypeError: If beg has tzinfo and end does not or vice versa.
+		ValueError: If at least 2 args are not passed or all 3 are but don't
+			match
 	"""
 
 	def __init__(
@@ -55,8 +59,8 @@ class Interval():
 			self._delta = delta
 
 	def __repr__(self):
-		return '{cls}(beg={self.beg}, end={self.end})'.format(
-			cls=type(self),
+		return '{cls}(beg={self.beg!r}, end={self.end!r})'.format(
+			cls=self.__class__.__name__,
 			self=self,
 			)
 
@@ -475,6 +479,11 @@ class Week(FixedInterval, ProperInterval):
 
 	@classmethod
 	def containing(cls, d: date, starts_on: int = None):
+		"""Create the week that starts on d.
+
+		Use calendar.setfirstweekday or pass starts_on to set the first
+		day of the week, must be 0(MONDAY) through 6 (SUNDAY).
+		"""
 		if not starts_on:
 			starts_on = calendar.firstweekday()
 		if isinstance(d, datetime):
