@@ -39,7 +39,6 @@ setup(
 		],
 	long_description=open(join(dirname(__file__), 'README.rst')).read(),
 	install_requires=['setuptools'],
-	tests_require=['pytest'],
-	setup_requires=['pytest-runner'],
+	tests_require=['pytest', 'pytest-runner'],
 	package_data={'': ['README.rst', 'LICENSE']},
 	)

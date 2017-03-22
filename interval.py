@@ -14,10 +14,6 @@ from abc import ABCMeta, abstractmethod
 import calendar
 from datetime import datetime, date, timedelta, tzinfo
 
-# TODO choose a name - interval is too generic
-# Future feature: complex intervals (containing parts of time and not others)
-# Future feature: business hours/days logic
-
 __version__ = '0.1.0'
 
 
@@ -110,14 +106,14 @@ class Interval():
 		elif dt > self.end:
 			return 1.0
 		else:
-			return (dt - self.start) / self.delta
+			return (dt - self.beg) / self.delta
 
 	def run_rate(self, dt: datetime = None, value=1):
 		"""Return the run rate for value at dt.
 
 		If dt is x% through the Interval, calulate the basic run rate for value.
 		"""
-		return value * self.pace(dt)
+		return value / self.pace(dt)
 
 	def divide(self, interval_type, extras_action='raise'):
 		"""Divide this interval into Intervals of interval_type.
@@ -171,7 +167,6 @@ class ProperInterval(Interval, metaclass=ABCMeta):
 	@classmethod
 	def ending(cls, dt: datetime):
 		"""Return the instance of this class ending at datetime dt."""
-		# TODO infinite recursion with prev
 		return cls.beginning(dt).prev()
 
 	def next(self):
@@ -431,11 +426,6 @@ class FixedIntervalType(ABCMeta):
 	FixedIntervalType.
 	"""
 
-	@property
-	@abstractmethod
-	def delta(self) -> timedelta:
-		raise NotImplementedError
-
 	def __mul__(self, value):
 		# TODO
 		raise NotImplementedError
@@ -446,6 +436,12 @@ class FixedInterval(Interval, metaclass=FixedIntervalType):
 
 	def __init__(self, beg: datetime):
 		self._beg = beg
+
+	@property
+	@classmethod
+	@abstractmethod
+	def delta(self) -> timedelta:
+		raise NotImplementedError
 
 	@property
 	def end(self) -> datetime:
@@ -469,7 +465,7 @@ class FixedInterval(Interval, metaclass=FixedIntervalType):
 
 	@classmethod
 	def create(cls, delta: timedelta, name='CustomInterval'):
-		return type(name, (cls, ), {'delta': delta})
+		return FixedIntervalType(name, (cls, ), {'delta': delta})
 
 
 class Week(FixedInterval, ProperInterval):
