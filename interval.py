@@ -119,20 +119,6 @@ class Interval():
 		"""
 		return value / self.pace(dt)
 
-	def divide(self, interval_type, extras_action='raise'):
-		"""Divide this interval into Intervals of interval_type.
-
-		extras_action can be 'raise', 'ignore', or 'partial'
-		'raise' - raise an Exception if the passed IntervalType does not evenly
-			divide this Interval.
-		'ignore' - ignore parts of this Interval to divide self into subintervals
-			of interval_type
-		'partial' - return partial intervals not matching interval_type where
-			necessary
-		"""
-		# TODO
-		raise NotImplementedError
-
 	def __add__(self, other):
 		if other.end == self.beg:
 			return Interval(other.beg, self.end)
@@ -142,7 +128,97 @@ class Interval():
 			raise ValueError('Interval is not consecutive with this Interval')
 
 
-class ProperInterval(Interval, metaclass=ABCMeta):
+class _IterableInterval(metaclass=ABCMeta):
+	"""Mixin for classes that can be iterated over."""
+
+	@classmethod
+	@abstractmethod
+	def beginning(cls, dt: datetime):
+		"""Return an Interval of this type beginning on dt."""
+		raise NotImplementedError
+
+	@classmethod
+	def ending(cls, dt: datetime):
+		"""Return the instance of this class ending at datetime dt."""
+		return cls.beginning(dt).prev()
+
+	def next(self):
+		"""Return the next Interval of this type."""
+		return self.beginning(self.end)
+
+	@abstractmethod
+	def prev(self):
+		"""Return the previous Interval of this type."""
+		raise NotImplementedError
+
+	@classmethod
+	def divide(cls, interval: Interval, extras_action='raise'):
+		"""Divide an interval into Intervals of this type.
+
+		extras_action can be 'raise', 'ignore', or 'partial'
+		'raise' - raise a ValueError if the passed IntervalType does not evenly
+			divide this Interval.
+		'ignore' - ignore parts of this Interval to divide self into subintervals
+			of interval_type
+		'partial' - return partial intervals not matching interval_type where
+			necessary
+		"""
+		possible_values = ('raise', 'ignore', 'partial')
+		if extras_action not in possible_values:
+			poss_values_str = '","'.join(possible_values)
+			raise ValueError('extras_action must be one of "%s"' % poss_values_str)
+		out = []
+		sub_interval = cls.containing(interval.beg)
+		if interval.beg != sub_interval.beg:
+			if extras_action == 'raise':
+				raise ValueError(
+					'The beginning of interval is not the beginning of a ' +
+					cls.__name__
+					)
+			elif extras_action == 'partial':
+				out.append(Interval(beg=interval.beg, end=sub_interval.end))
+			else:
+				out.append(sub_interval)
+		else:
+			out.append(sub_interval)
+		sub_interval = sub_interval.next()
+		while sub_interval.end <= interval.end:
+			out.append(sub_interval)
+			sub_interval = sub_interval.next()
+		if sub_interval.beg != interval.end:
+			if extras_action == 'raise':
+				raise ValueError(
+					'The end of interval is does not line up with ' +
+					cls.__name__
+					)
+			elif extras_action == 'partial':
+				out.append(Interval(beg=sub_interval.beg, end=interval.end))
+		return out
+
+	def iter(self, count=None, end=None, reverse=False):
+		"""Generate Intervals of this class starting with self.
+
+		Args:
+			count: If not None, generate at most count Intervals
+			end: If not None, stop before this is yielded
+			reverse: If true, generate backwards
+		"""
+		yielded_count = 0
+		next_interval = self
+		while True:
+			if count is not None and yielded_count >= count:
+				break
+			if next_interval == end:
+				break
+			yield next_interval
+			yielded_count += 1
+			if reverse:
+				next_interval = next_interval.prev()
+			else:
+				next_interval = next_interval.next()
+
+
+class ProperInterval(Interval, _IterableInterval, metaclass=ABCMeta):
 	"""A Interval representing a span on a clock or calendar, eg. a month or hour.
 
 	This is in contrast to a Interval starting at an abitrary point time.
@@ -167,20 +243,6 @@ class ProperInterval(Interval, metaclass=ABCMeta):
 		if interval.beg != dt:
 			raise ValueError('dt is not the beggining of a {cls}'.format(cls=cls))
 		return interval
-
-	@classmethod
-	def ending(cls, dt: datetime):
-		"""Return the instance of this class ending at datetime dt."""
-		return cls.beginning(dt).prev()
-
-	def next(self):
-		"""Return the next Interval of this type."""
-		return self.beginning(self.end)
-
-	@abstractmethod
-	def prev(self):
-		"""Return the previous Interval of this type."""
-		raise NotImplementedError
 
 	@classmethod
 	def first_after(cls, dt: datetime):
@@ -423,7 +485,7 @@ class FixedIntervalType(ABCMeta):
 		raise NotImplementedError
 
 
-class FixedInterval(Interval, metaclass=FixedIntervalType):
+class FixedInterval(Interval, _IterableInterval, metaclass=FixedIntervalType):
 	"""A Interval of a fixed length."""
 
 	def __init__(self, beg: datetime) -> None:
@@ -439,9 +501,6 @@ class FixedInterval(Interval, metaclass=FixedIntervalType):
 	def end(self) -> datetime:
 		return self.beg + self.delta
 
-	def next(self):
-		return self.beginning(self.end)
-
 	def prev(self):
 		return self.ending(self.beg)
 
@@ -451,13 +510,8 @@ class FixedInterval(Interval, metaclass=FixedIntervalType):
 		return cls(d)
 
 	@classmethod
-	def ending(cls, d: datetime):
-		"""Return the instance of this class ending at datetime d."""
-		beg = d - cls.delta
-		return cls(beg)
-
-	@classmethod
 	def create(cls, delta: timedelta, name='CustomInterval'):
+		"""Create a FixedIntervalType with delta delta."""
 		return FixedIntervalType(name, (cls, ), {'delta': delta})
 
 
