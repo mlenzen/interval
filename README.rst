@@ -14,7 +14,7 @@ Classes for dealing with date ranges
 
 Why?
 ====
-Dealing with months and years can be cumbersome in python.
+Dealing with months and years can be cumbersome and verbose in python.
 Remembering which function to call from ``datetime.datetime`` or
 ``calendar`` or worse - having to roll your own each time.
 
@@ -23,25 +23,27 @@ Example
 
 .. code-block:: python
 
-	>>> from datetime import datetime
-	>>> from interval import Year, Quarter, Month, Day
+	>>> from datetime import datetime, timedelta
+	>>> from interval import Year, Quarter, Month, Day, FixedInterval
 	>>> dt = datetime(2017, 2, 8)
+	>>> # Return the Month containing a datetime
 	>>> feb_2017 = Month.containing(dt)
-	>>> feb_2017.run_rate(dt, 125)
-	500.0
-	>>> Month.divide(Year(2017))
-	[Month(beg=datetime.datetime(2017, 1, 1, 0, 0), end=datetime.datetime(2017, 2, 1, 0, 0)),
-	 Month(beg=datetime.datetime(2017, 2, 1, 0, 0), end=datetime.datetime(2017, 3, 1, 0, 0)),
-	 Month(beg=datetime.datetime(2017, 3, 1, 0, 0), end=datetime.datetime(2017, 4, 1, 0, 0)),
-	 Month(beg=datetime.datetime(2017, 4, 1, 0, 0), end=datetime.datetime(2017, 5, 1, 0, 0)),
-	 Month(beg=datetime.datetime(2017, 5, 1, 0, 0), end=datetime.datetime(2017, 6, 1, 0, 0)),
-	 Month(beg=datetime.datetime(2017, 6, 1, 0, 0), end=datetime.datetime(2017, 7, 1, 0, 0)),
-	 Month(beg=datetime.datetime(2017, 7, 1, 0, 0), end=datetime.datetime(2017, 8, 1, 0, 0)),
-	 Month(beg=datetime.datetime(2017, 8, 1, 0, 0), end=datetime.datetime(2017, 9, 1, 0, 0)),
-	 Month(beg=datetime.datetime(2017, 9, 1, 0, 0), end=datetime.datetime(2017, 10, 1, 0, 0)),
-	 Month(beg=datetime.datetime(2017, 10, 1, 0, 0), end=datetime.datetime(2017, 11, 1, 0, 0)),
-	 Month(beg=datetime.datetime(2017, 11, 1, 0, 0), end=datetime.datetime(2017, 12, 1, 0, 0)),
-	 Month(beg=datetime.datetime(2017, 12, 1, 0, 0), end=datetime.datetime(2018, 1, 1, 0, 0))]
+	>>> # Calculate the percent complete
+	>>> feb_2017.pace(dt)
+	0.25
+	>>> # Get related Intervals
+	>>> feb_2017.next()
+	Month(beg=datetime.datetime(2017, 3, 1, 0, 0), end=datetime.datetime(2017, 4, 1, 0, 0))
+	>>> # Divide Intervals into Intervals of other types
+	>>> Month.divide(Quarter(2017, 1))
+	[Month(beg=datetime.datetime(2017, 1, 1, 0, 0), end=datetime.datetime(2017, 2, 1, 0, 0)), Month(beg=datetime.datetime(2017, 2, 1, 0, 0), end=datetime.datetime(2017, 3, 1, 0, 0)), Month(beg=datetime.datetime(2017, 3, 1, 0, 0), end=datetime.datetime(2017, 4, 1, 0, 0))]
+	>>> # Alternatively written
+	>>> Quarter(2017, 1).divide_into(Month)
+	[Month(beg=datetime.datetime(2017, 1, 1, 0, 0), end=datetime.datetime(2017, 2, 1, 0, 0)), Month(beg=datetime.datetime(2017, 2, 1, 0, 0), end=datetime.datetime(2017, 3, 1, 0, 0)), Month(beg=datetime.datetime(2017, 3, 1, 0, 0), end=datetime.datetime(2017, 4, 1, 0, 0))]
+	>>> # A FixedInterval is an Interval that alwas has the same delta (unlike a Month or Year)
+	>>> Fortnight = FixedInterval.create(timedelta(weeks=2), name='Fortnight')
+	>>> Fortnight.ending(datetime(2017, 2, 8))
+	Fortnight(beg=datetime.datetime(2017, 1, 25, 0, 0), end=datetime.datetime(2017, 2, 8, 0, 0))
 
 
 :Author: Michael Lenzen

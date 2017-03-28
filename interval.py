@@ -195,6 +195,15 @@ class _IterableInterval(metaclass=ABCMeta):
 				out.append(Interval(beg=sub_interval.beg, end=interval.end))
 		return out
 
+	def divide_into(self, interval_type):
+		"""Inverse way of calling `divide`.
+
+		Args:
+			interval_type (_IterableInterval): The type of interval to divide self into.
+			extras_action: See `divide`
+		"""
+		return interval_type.divide(self)
+
 	def iter(self, count=None, end=None, reverse=False):
 		"""Generate Intervals of this class starting with self.
 
@@ -372,7 +381,7 @@ class Quarter(ProperInterval):
 		else:
 			year = self.year
 			month = self.quarter * 3 + 1
-		return datetime(year, month, tzinfo=self.tzinfo)
+		return datetime(year, month, 1, tzinfo=self.tzinfo)
 
 	@property
 	def delta(self) -> timedelta:
@@ -481,8 +490,7 @@ class FixedIntervalType(ABCMeta):
 	"""
 
 	def __mul__(self, value):
-		# TODO
-		raise NotImplementedError
+		return self.create(value * self.delta)
 
 
 class FixedInterval(Interval, _IterableInterval, metaclass=FixedIntervalType):
@@ -510,9 +518,14 @@ class FixedInterval(Interval, _IterableInterval, metaclass=FixedIntervalType):
 		return cls(d)
 
 	@classmethod
-	def create(cls, delta: timedelta, name='CustomInterval'):
+	def ending(cls, d: datetime):
+		"""Return the instance of this class beginning at datetime d."""
+		return cls(d - cls.delta)
+
+	@classmethod
+	def create(cls, delta: timedelta, name='FixedInterval'):
 		"""Create a FixedIntervalType with delta delta."""
-		return FixedIntervalType(name, (cls, ), {'delta': delta})
+		return type(name, (cls, ), {'delta': delta})
 
 
 class Week(FixedInterval, ProperInterval):
