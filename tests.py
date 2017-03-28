@@ -1,5 +1,5 @@
 """Tests for interval."""
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, tzinfo
 
 import pytest
 
@@ -13,6 +13,21 @@ from interval import (
 	)
 
 
+class UTCType(tzinfo):
+
+	def utcoffset(self, dt):
+		return timedelta(0)
+
+	def tzname(self, dt):
+		return "UTC"
+
+	def dst(self, dt):
+		return timedelta(0)
+
+
+UTC = UTCType()
+
+
 def test_interval_init():
 	i = Interval(datetime(2017, 3, 22), datetime(2017, 3, 24))
 	assert i.delta == timedelta(days=2)
@@ -22,7 +37,7 @@ def test_interval_init():
 
 def test_interval_init_tzinfo_mismatch():
 	with pytest.raises(TypeError):
-		Interval(datetime(2017, 3, 22), datetime.now(tz=timezone.utc))
+		Interval(datetime(2017, 3, 22), datetime.now(tz=UTC))
 
 
 def test_interval_init_value_mismatch():
@@ -51,11 +66,11 @@ def test_interval_init_empty():
 
 
 def test_tzinfo():
-	assert Interval(datetime.now(timezone.utc), delta=timedelta(days=1)).tzinfo == timezone.utc
+	assert Interval(datetime.now(UTC), delta=timedelta(days=1)).tzinfo == UTC
 
 
 def test_tzinfo_from_end():
-	assert Interval(end=datetime.now(timezone.utc), delta=timedelta(days=2)).tzinfo == timezone.utc
+	assert Interval(end=datetime.now(UTC), delta=timedelta(days=2)).tzinfo == UTC
 
 
 def test_str():
